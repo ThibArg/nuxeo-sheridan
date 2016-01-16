@@ -12,7 +12,6 @@
   <version>1.0-SNAPSHOT</version>
   <name>nuxeo-sheridan-plugin</name>
   <description/>
-
   <dependencies>
     <!-- AWS -->
     <!-- Hard coding the same version as the one used by build nuxeo -->
@@ -32,8 +31,6 @@
       <artifactId>aws-java-sdk-s3</artifactId>
       <version>1.10.22</version>
     </dependency>
-
-
     <dependency>
       <groupId>org.nuxeo.common</groupId>
       <artifactId>nuxeo-common</artifactId>
@@ -61,6 +58,25 @@
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.nuxeo.ecm.platform</groupId>
+      <artifactId>nuxeo-platform-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.nuxeo.runtime</groupId>
+      <artifactId>nuxeo-runtime-test</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>

@@ -55,21 +55,26 @@ public class S3TempSignedURLBuilder {
 
     protected static String awsBucket;
     
+    /*
     // TEMP FOR QUICK TEST ONLY
     public S3TempSignedURLBuilder(String key, String secret, String bucket) {
+        
         awsBucket = bucket;
         awsAccessKeyId = key;
         awsSecretAccessKey = secret;
         
         awsCredentialsProvider = new SimpleAWSCredentialProvider(awsAccessKeyId, awsSecretAccessKey);
     }
+    */
 
     public S3TempSignedURLBuilder() {
 
         awsBucket = Framework.getProperty(CONF_KEY_NAME_BUCKET);
+        /* Having no bucket name in the config is ok if a bucket is passed as argument to buld()
         if (StringUtils.isNotBlank(awsAccessKeyId)) {
             throw new NuxeoException("AWS bucket (key " + CONF_KEY_NAME_BUCKET + ") not defined in the configuration");
         }
+        */
 
         buildCredentiaProvider();
         if (awsCredentialsProvider == null) {
@@ -81,8 +86,15 @@ public class S3TempSignedURLBuilder {
 
         s3 = new AmazonS3Client(awsCredentialsProvider);
     }
-
-    public String build(String objectKey, int expireInSeconds, String contentType, String contentDisposition) throws IOException {
+    
+    public String build(String bucket, String objectKey, int expireInSeconds, String contentType, String contentDisposition) throws IOException {
+        
+        if(StringUtils.isBlank(bucket)) {
+            bucket = awsBucket;
+        }
+        if(StringUtils.isBlank(bucket)) {
+            throw new NuxeoException("No bucket provided, and configuration key " + CONF_KEY_NAME_BUCKET + " is missing.");
+        }
         
         Date expiration = new Date();
         if(expireInSeconds < 1) {
@@ -90,7 +102,7 @@ public class S3TempSignedURLBuilder {
         }
         expiration.setTime(expiration.getTime() + (expireInSeconds * 1000));
 
-        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(awsBucket, objectKey, HttpMethod.GET);
+        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, objectKey, HttpMethod.GET);
         
         // Do we need these?
         if(StringUtils.isNotBlank(contentType)) {
@@ -109,6 +121,12 @@ public class S3TempSignedURLBuilder {
         } catch (URISyntaxException e) {
             throw new IOException(e);
         }
+        
+    }
+
+    public String build(String objectKey, int expireInSeconds, String contentType, String contentDisposition) throws IOException {
+        
+        return build(awsBucket, objectKey, expireInSeconds, contentType, contentDisposition);
 
     }
 
