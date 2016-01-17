@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.nuxeo</groupId>
     <artifactId>nuxeo-addons-parent</artifactId>
-    <version>7.10-SNAPSHOT</version>
+    <version>7.10</version>
   </parent>
   <groupId>nuxeo-sheridan</groupId>
   <artifactId>nuxeo-sheridan-parent</artifactId>
@@ -13,24 +13,36 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <description />
+  <properties>
+    <nuxeo.project.version>${project.version}</nuxeo.project.version>
+    <nuxeo.version>7.10</nuxeo.version>
+    <nuxeo.distribution.version>7.10</nuxeo.distribution.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <nuxeo.sheridan.version>1.0-SNAPSHOT</nuxeo.sheridan.version>
+  </properties>
   <modules>
     <module>nuxeo-sheridan-plugin</module>
     <module>nuxeo-sheridan-mp</module>
   </modules>
-  <properties>
-    <nuxeo.sheridan.version>1.0-SNAPSHOT</nuxeo.sheridan.version>
-  </properties>
   <dependencyManagement>
     <dependencies>
       <dependency>
+                <groupId>org.nuxeo.ecm.distribution</groupId>
+                <artifactId>nuxeo-distribution</artifactId>
+                <scope>import</scope>
+                <type>pom</type>
+                <version>${nuxeo.version}</version>
+            </dependency>
+      <dependency>
         <groupId>nuxeo-sheridan</groupId>
         <artifactId>nuxeo-sheridan-plugin</artifactId>
-        <version>${nuxeo.sheridan.version}</version>
+        <version>${nuxeo.project.version}</version>
       </dependency>
       <dependency>
         <groupId>nuxeo-sheridan</groupId>
         <artifactId>nuxeo-sheridan-mp</artifactId>
-        <version>${nuxeo.sheridan.version}</version>
+        <version>${nuxeo.project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
