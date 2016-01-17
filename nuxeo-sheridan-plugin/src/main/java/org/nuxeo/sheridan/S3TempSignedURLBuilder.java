@@ -49,32 +49,28 @@ public class S3TempSignedURLBuilder {
 
     protected AmazonS3 s3;
 
-    protected static String awsAccessKeyId;
+    protected static String awsAccessKeyId = null;
 
-    protected static String awsSecretAccessKey;
+    protected static String awsSecretAccessKey = null;
 
-    protected static String awsBucket;
-    
+    protected static String awsBucket = null;
+
     /*
-    // TEMP FOR QUICK TEST ONLY
-    public S3TempSignedURLBuilder(String key, String secret, String bucket) {
-        
-        awsBucket = bucket;
-        awsAccessKeyId = key;
-        awsSecretAccessKey = secret;
-        
-        awsCredentialsProvider = new SimpleAWSCredentialProvider(awsAccessKeyId, awsSecretAccessKey);
-    }
-    */
+     * // TEMP FOR QUICK TEST ONLY public S3TempSignedURLBuilder(String key, String secret, String bucket) { awsBucket =
+     * bucket; awsAccessKeyId = key; awsSecretAccessKey = secret; awsCredentialsProvider = new
+     * SimpleAWSCredentialProvider(awsAccessKeyId, awsSecretAccessKey); }
+     */
 
     public S3TempSignedURLBuilder() {
 
-        awsBucket = Framework.getProperty(CONF_KEY_NAME_BUCKET);
-        /* Having no bucket name in the config is ok if a bucket is passed as argument to buld()
-        if (StringUtils.isNotBlank(awsAccessKeyId)) {
-            throw new NuxeoException("AWS bucket (key " + CONF_KEY_NAME_BUCKET + ") not defined in the configuration");
+        if (StringUtils.isBlank(awsBucket)) {
+            awsBucket = Framework.getProperty(CONF_KEY_NAME_BUCKET);
+            /*
+             * Having no bucket name in the config is ok if a bucket is passed as argument to buld() if
+             * (StringUtils.isNotBlank(awsAccessKeyId)) { throw new NuxeoException("AWS bucket (key " +
+             * CONF_KEY_NAME_BUCKET + ") not defined in the configuration"); }
+             */
         }
-        */
 
         buildCredentiaProvider();
         if (awsCredentialsProvider == null) {
@@ -86,46 +82,49 @@ public class S3TempSignedURLBuilder {
 
         s3 = new AmazonS3Client(awsCredentialsProvider);
     }
-    
-    public String build(String bucket, String objectKey, int expireInSeconds, String contentType, String contentDisposition) throws IOException {
-        
-        if(StringUtils.isBlank(bucket)) {
+
+    public String build(String bucket, String objectKey, int expireInSeconds, String contentType,
+            String contentDisposition) throws IOException {
+
+        if (StringUtils.isBlank(bucket)) {
             bucket = awsBucket;
         }
-        if(StringUtils.isBlank(bucket)) {
-            throw new NuxeoException("No bucket provided, and configuration key " + CONF_KEY_NAME_BUCKET + " is missing.");
+        if (StringUtils.isBlank(bucket)) {
+            throw new NuxeoException("No bucket provided, and configuration key " + CONF_KEY_NAME_BUCKET
+                    + " is missing.");
         }
-        
+
         Date expiration = new Date();
-        if(expireInSeconds < 1) {
+        if (expireInSeconds < 1) {
             expireInSeconds = DEFAULT_EXPIRE;
         }
         expiration.setTime(expiration.getTime() + (expireInSeconds * 1000));
 
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, objectKey, HttpMethod.GET);
-        
+
         // Do we need these?
-        if(StringUtils.isNotBlank(contentType)) {
+        if (StringUtils.isNotBlank(contentType)) {
             request.addRequestParameter("response-content-type", contentType);
         }
-        if(StringUtils.isNotBlank(contentDisposition)) {
+        if (StringUtils.isNotBlank(contentDisposition)) {
             request.addRequestParameter("response-content-disposition", contentDisposition);
         }
-        
+
         request.setExpiration(expiration);
         URL url = s3.generatePresignedUrl(request);
-        
+
         try {
             URI uri = url.toURI();
             return uri.toString();
         } catch (URISyntaxException e) {
             throw new IOException(e);
         }
-        
+
     }
 
-    public String build(String objectKey, int expireInSeconds, String contentType, String contentDisposition) throws IOException {
-        
+    public String build(String objectKey, int expireInSeconds, String contentType, String contentDisposition)
+            throws IOException {
+
         return build(awsBucket, objectKey, expireInSeconds, contentType, contentDisposition);
 
     }

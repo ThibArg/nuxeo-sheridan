@@ -18,6 +18,7 @@ package org.nuxeo.sheridan;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
 
 import org.jboss.seam.ScopeType;
 import org.jboss.seam.annotations.In;
@@ -36,22 +37,23 @@ import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
 public class SheridanHelperBean implements Serializable {
 
     private static final long serialVersionUID = -8550491926836699499L;
-
-    @In(create = true, required = false)
-    protected transient CoreSession documentManager;
-
-    @In(create = true)
-    protected NavigationContext navigationContext;
     
-    public String getS3TempSignedUrl(String inXPathForKey) throws IOException {
+    public String getS3TempSignedUrl(String inKey) throws IOException {
         
         String url = "";
         
-        DocumentModel currentDoc = navigationContext.getCurrentDocument();
-        String objectKey = (String) currentDoc.getPropertyValue(inXPathForKey);
+        S3TempSignedURLBuilder builder = new S3TempSignedURLBuilder();
+        url = builder.build(inKey, 0, null, null);
+        
+        return url;
+    }
+    
+    public String getS3TempSignedUrl(String inBucket, String inKey) throws IOException {
+        
+        String url = "";
         
         S3TempSignedURLBuilder builder = new S3TempSignedURLBuilder();
-        url = builder.build(objectKey, 0, null, null);
+        url = builder.build(inBucket, inKey, 0, null, null);
         
         return url;
     }

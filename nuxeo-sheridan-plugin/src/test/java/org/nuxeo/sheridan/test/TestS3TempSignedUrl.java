@@ -112,14 +112,14 @@ public class TestS3TempSignedUrl {
     @Test
     public void testTempSignedUrlShouldFail() throws Exception {
 
-        int duration = 5; // 5 seconds, not 20 minutes or whatever S3TempSignedURLBuilder.DEFAULT_EXPIRE is
+        int duration = 2; // 2 seconds, not 20 minutes or whatever S3TempSignedURLBuilder.DEFAULT_EXPIRE is
 
         S3TempSignedURLBuilder builder = new S3TempSignedURLBuilder();
         String urlStr = builder.build(TEST_FILE_KEY, duration, null, "filename=" + TEST_FILE_KEY);
         assertTrue(StringUtils.isNotBlank(urlStr));
                 
-        // Let's wait
-        Thread.sleep(duration * 1000);
+        // Let's wait a bit
+        Thread.sleep(5000);
 
         // Downloading should fail, so the returned File is null
         File f = downloadFile(urlStr);
