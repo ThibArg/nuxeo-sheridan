@@ -33,6 +33,17 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 
 /**
+ * This class builds a Temporary Signed Url to access a file in a S3 bucket.
+ * <p>
+ * The configuration <b>must</b> (typically, in nuxeo.conf) contain at least these 2 keys: <code>sheridan.s3.key</code>
+ * and <code>sheridan.s3.secret</code>, which are the key ID and secret key used to get access to AWS.
+ * <p>
+ * Also, it is possible to set a bucket in the <code>sheridan.s3.bucket</code> configuration parameter. This bucket will
+ * be used by default when no bucket is passed in some APIs.
+ * <p>
+ * Once these keys have been defined in the configuration, the class allows to build a temporary signed URL to an object
+ * stored in AWS S3, in a specified bucket.
+ * 
  * @since 7.10
  */
 public class S3TempSignedURLBuilder {
@@ -55,21 +66,11 @@ public class S3TempSignedURLBuilder {
 
     protected static String awsBucket = null;
 
-    /*
-     * // TEMP FOR QUICK TEST ONLY public S3TempSignedURLBuilder(String key, String secret, String bucket) { awsBucket =
-     * bucket; awsAccessKeyId = key; awsSecretAccessKey = secret; awsCredentialsProvider = new
-     * SimpleAWSCredentialProvider(awsAccessKeyId, awsSecretAccessKey); }
-     */
-
     public S3TempSignedURLBuilder() {
 
         if (StringUtils.isBlank(awsBucket)) {
             awsBucket = Framework.getProperty(CONF_KEY_NAME_BUCKET);
-            /*
-             * Having no bucket name in the config is ok if a bucket is passed as argument to buld() if
-             * (StringUtils.isNotBlank(awsAccessKeyId)) { throw new NuxeoException("AWS bucket (key " +
-             * CONF_KEY_NAME_BUCKET + ") not defined in the configuration"); }
-             */
+            // Having no bucket name in the config is ok if a bucket is passed as argument to buld().
         }
 
         buildCredentiaProvider();
@@ -83,6 +84,29 @@ public class S3TempSignedURLBuilder {
         s3 = new AmazonS3Client(awsCredentialsProvider);
     }
 
+    /**
+     * Return an url as string. This url is a temporary signed url giving access to the object for
+     * <code>expireInSeconds</expireInSeconds> seconds. After this time, the object cannot be accessed anymore with this URL.
+     * <p>
+     * Some default values apply:
+     * <p>
+     * <ul>
+     * <li>If <code>bucket</code> is empty (null, "", " ", ....), the bucket defined in the configuration is used.</li>
+     * <li>If <code>expireInSeconds</code> is less than 1, the default
+     * <code>S3TempSignedURLBuilder.DEFAULT_EXPIRE</code> is used</li> <li><code>contentType</code> and
+     * <code>contentDisposition</code> can be null or "", but it is recommended to set them to make sure the is no
+     * ambiguity when the URL is used (a key without a file extension for example)</li> </ul>
+     * <p>
+     * 
+     * @param bucket
+     * @param objectKey
+     * @param expireInSeconds
+     * @param contentType
+     * @param contentDisposition
+     * @return the temporary signed Url
+     * @throws IOException
+     * @since 7.10
+     */
     public String build(String bucket, String objectKey, int expireInSeconds, String contentType,
             String contentDisposition) throws IOException {
 
@@ -122,6 +146,28 @@ public class S3TempSignedURLBuilder {
 
     }
 
+    /**
+     * Return an url as string. This url is a temporary signed url giving access to the object for
+     * <code>expireInSeconds</expireInSeconds> seconds. After this time, the object cannot be accessed anymore with this URL.
+     * <p>
+     * Some default values apply:
+     * <p>
+     * <ul>
+     * <li>The bucket used is the one defined in the configuration.</li>
+     * <li>If <code>expireInSeconds</code> is less than 1, the default
+     * <code>S3TempSignedURLBuilder.DEFAULT_EXPIRE</code> is used</li> <li><code>contentType</code> and
+     * <code>contentDisposition</code> can be null or "", but it is recommended to set them to make sure the is no
+     * ambiguity when the URL is used (a key without a file extension for example)</li> </ul>
+     * <p>
+     * 
+     * @param objectKey
+     * @param expireInSeconds
+     * @param contentType
+     * @param contentDisposition
+     * @return the temporary signed Url
+     * @throws IOException
+     * @since 7.10
+     */
     public String build(String objectKey, int expireInSeconds, String contentType, String contentDisposition)
             throws IOException {
 

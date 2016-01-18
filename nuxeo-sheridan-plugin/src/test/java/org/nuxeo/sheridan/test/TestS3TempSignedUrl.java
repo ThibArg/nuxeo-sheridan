@@ -39,15 +39,26 @@ import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.sheridan.S3TempSignedURLBuilder;
 
 /**
- * Important: To test the feature, we don't want to hard code the AWS keys, since this code could be published on GitHub
- * for example. So, the principles used are the following:
+ * Important: To test the feature, we don't want to hard code the AWS keys (since this code could be published on GitHub
+ * for example) and we don't want to hard code he bucket name or the distant object key, since everyone will have a
+ * different one. So, the principles used are the following:
  * <ul>
  * <li>We have a file named aws-test.conf at nuxeo-sheridan-plugin/src/test/resources/</li>
  * <li>The file contains the keys</li>
  * <li>The .gitignore config file ignores this file, so it is not sent on GitHub</li>
  * </ul>
- * Also, of course, make sure the file you test exist in your bucket: Change TEST_FILE_KEY and TEST_FILE_SIZE
- * accordingly
+ * This configuration file also stores the key of the file to test, and it's info. So, basically to run the test, create
+ * this file at nuxeo-sheridan-plugin/src/test/resources/ and set the following properties:
+ * 
+ * <pre>
+ * {@code
+ * sheridan.s3.key=HERE_THE_KEY_ID
+ * sheridan.s3.secret=HERE_THE_SECRET_KEY
+ * sheridan.s3.bucket=HERE_THE_NAME_OF_THE_BUCKET_TO_TEST
+ * test.object=Creative-Brief-Lorem-ipsum.pdf
+ * test.object.size = 39119
+ * }
+ * </pre>
  * 
  * @since 7.10
  */
@@ -58,12 +69,29 @@ public class TestS3TempSignedUrl {
 
     protected static final String TEST_CONF = "aws-test.conf";
 
-    protected static final String TEST_FILE_KEY = "Creative-Brief-Lorem-ipsum.pdf";
+    public static final String TEST_CONF_KEY_NAME_AWS_KEY_ID = "test.aws.key";
 
-    protected static final int TEST_FILE_SIZE = 39119;
+    public static final String TEST_CONF_KEY_NAME_AWS_SECRET = "test.aws.secret";
+
+    public static final String TEST_CONF_KEY_NAME_AWS_S3_BUCKET = "test.aws.s3.bucket";
+
+    public static final String TEST_CONF_KEY_NAME_OBJECT_KEY = "test.object.key";
+
+    public static final String TEST_CONF_KEY_NAME_OBJECT_SIZE = "test.object.size";
+
+    protected static String awsKeyId;
+
+    protected static String awsSecret;
+
+    protected static String awsBucket;
+
+    protected static String TEST_FILE_KEY;
+
+    protected static long TEST_FILE_SIZE = -1;
 
     @Before
     public void setup() throws Exception {
+
         // Get our local aws-test.conf file and load the properties
         File file = FileUtils.getResourceFileFromContext(TEST_CONF);
         FileInputStream fileInput = new FileInputStream(file);
@@ -72,20 +100,37 @@ public class TestS3TempSignedUrl {
         fileInput.close();
 
         // Check we do have the keys
-        String key, secret, bucket;
-        key = props.getProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_ACCESS_KEY);
-        assertTrue("Missing " + S3TempSignedURLBuilder.CONF_KEY_NAME_ACCESS_KEY, StringUtils.isNotBlank(key));
+        if (StringUtils.isBlank(awsKeyId)) {
+            awsKeyId = props.getProperty(TEST_CONF_KEY_NAME_AWS_KEY_ID);
+            assertTrue("Missing " + TEST_CONF_KEY_NAME_AWS_KEY_ID, StringUtils.isNotBlank(awsKeyId));
+        }
 
-        secret = props.getProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_SECRET_KEY);
-        assertTrue("Missing " + S3TempSignedURLBuilder.CONF_KEY_NAME_SECRET_KEY, StringUtils.isNotBlank(secret));
+        if (StringUtils.isBlank(awsSecret)) {
+            awsSecret = props.getProperty(TEST_CONF_KEY_NAME_AWS_SECRET);
+            assertTrue("Missing " + TEST_CONF_KEY_NAME_AWS_SECRET, StringUtils.isNotBlank(awsSecret));
+        }
 
-        bucket = props.getProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_BUCKET);
-        assertTrue("Missing " + S3TempSignedURLBuilder.CONF_KEY_NAME_BUCKET, StringUtils.isNotBlank(bucket));
+        if (StringUtils.isBlank(awsBucket)) {
+            awsBucket = props.getProperty(TEST_CONF_KEY_NAME_AWS_S3_BUCKET);
+            assertTrue("Missing " + TEST_CONF_KEY_NAME_AWS_S3_BUCKET, StringUtils.isNotBlank(awsBucket));
+        }
 
         Properties systemProps = System.getProperties();
-        systemProps.setProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_ACCESS_KEY, key);
-        systemProps.setProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_SECRET_KEY, secret);
-        systemProps.setProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_BUCKET, bucket);
+        systemProps.setProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_ACCESS_KEY, awsKeyId);
+        systemProps.setProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_SECRET_KEY, awsSecret);
+        systemProps.setProperty(S3TempSignedURLBuilder.CONF_KEY_NAME_BUCKET, awsBucket);
+
+        // Now the file to test
+        if (StringUtils.isBlank(TEST_FILE_KEY)) {
+            TEST_FILE_KEY = props.getProperty(TEST_CONF_KEY_NAME_OBJECT_KEY);
+            assertTrue("Missing " + TEST_CONF_KEY_NAME_OBJECT_KEY, StringUtils.isNotBlank(TEST_FILE_KEY));
+        }
+
+        if (TEST_FILE_SIZE == -1) {
+            String sizeStr = props.getProperty(TEST_CONF_KEY_NAME_OBJECT_SIZE);
+            assertTrue("Missing " + TEST_CONF_KEY_NAME_OBJECT_SIZE, StringUtils.isNotBlank(sizeStr));
+            TEST_FILE_SIZE = Long.parseLong(sizeStr);
+        }
 
     }
 
@@ -95,7 +140,7 @@ public class TestS3TempSignedUrl {
         S3TempSignedURLBuilder builder = new S3TempSignedURLBuilder();
         String urlStr = builder.build(TEST_FILE_KEY, 0, null, "filename=" + TEST_FILE_KEY);
         assertTrue(StringUtils.isNotBlank(urlStr));
-      
+
         // We must be able to download the file without authentication
         File f = downloadFile(urlStr);
         assertNotNull(f);
@@ -117,9 +162,9 @@ public class TestS3TempSignedUrl {
         S3TempSignedURLBuilder builder = new S3TempSignedURLBuilder();
         String urlStr = builder.build(TEST_FILE_KEY, duration, null, "filename=" + TEST_FILE_KEY);
         assertTrue(StringUtils.isNotBlank(urlStr));
-                
-        // Let's wait a bit
-        Thread.sleep(5000);
+
+        // Wait for at least the duration
+        Thread.sleep((duration + 1) * 1000);
 
         // Downloading should fail, so the returned File is null
         File f = downloadFile(urlStr);

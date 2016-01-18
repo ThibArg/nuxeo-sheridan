@@ -21,10 +21,12 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 
 /**
+ * This class is a simple wrapper around <code>com.amazonaws.auth.BasicAWSCredentials</code>.
+ * <p>
  * We want to allow using nuxeo.conf to setup the keys, so we need our basic
  * custom credential provider.
  *
- * @since 7.1
+ * @since 7.10
  */
 public class SimpleAWSCredentialProvider implements AWSCredentialsProvider {
 
@@ -39,7 +41,7 @@ public class SimpleAWSCredentialProvider implements AWSCredentialsProvider {
     }
 
     public void refresh() {
-        // noop
+        // Nothing
     }
 
 }
